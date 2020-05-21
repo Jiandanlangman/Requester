@@ -28,12 +28,14 @@ object Requester {
     private var maxRequestQueueCount = 1
     private var enableGZIP = false
     private var routing = ""
+    private var retryPolicy = DisableRetryPolicy(20 * 1000)
 
     private lateinit var sslSocketFactory: SSLSocketFactory
     private lateinit var cacheDir: File
     private lateinit var mainLooperHandler: Handler
 
     private var executorDeliveryHandler: Handler? = null
+    private var dataParser: DataParser? = null
     private var preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)? = null
     private var onResponseListener: ((BaseResponse) -> Boolean)? = null
 
@@ -96,8 +98,17 @@ object Requester {
         this.charset = charset
     }
 
-    fun showLog(showLog:Boolean) {
+    fun showLog(showLog: Boolean) {
         this.showLog = showLog
+    }
+
+    fun setTimeout(timeoutMs: Int) {
+        if (timeoutMs != retryPolicy.currentTimeout)
+            retryPolicy = DisableRetryPolicy(timeoutMs)
+    }
+
+    fun setDataParser(dataParser: DataParser) {
+        this.dataParser = dataParser
     }
 
     fun get(url: String, tag: Any) = request(com.android.volley.Request.Method.GET, url, tag)
@@ -110,13 +121,19 @@ object Requester {
 
     internal fun isShowLog() = showLog
 
+    internal fun <T> parseData(json: String, clazz: Class<T>): T {
+        if (dataParser == null)
+            setDataParser(GSONDataParser())
+        return dataParser!!.parseData(json, clazz)
+    }
+
     private fun request(method: Int, url: String, tag: Any): Request {
         val headers = HashMap<String, Any>()
         headers.putAll(globalHeaders)
         val params = HashMap<String, Any>()
         params.putAll(globalParams)
         val requestQueue = getRequestQueue()
-        return Request(requestQueue, executorDeliveryHandler!!, mainLooperHandler, tag, if (url.startsWith("http", true)) url else "$routing$url", method, headers, params, enableGZIP, preRequestCallback, onResponseCallback)
+        return Request(requestQueue, executorDeliveryHandler!!, mainLooperHandler, tag, if (url.startsWith("http", true)) url else "$routing$url", method, headers, params, enableGZIP, retryPolicy, preRequestCallback, onResponseCallback)
     }
 
     private fun listeningActivityLifecycle(application: Application) = application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {

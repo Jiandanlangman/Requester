@@ -5,16 +5,15 @@ import android.os.SystemClock
 import android.util.Log
 import com.android.volley.RequestQueue
 import com.android.volley.Response
+import com.android.volley.RetryPolicy
 import com.android.volley.VolleyError
 
 
-class Request internal constructor(private val requestQueue: RequestQueue, private val executorDeliveryHandler: Handler, private val mainLooperHandler: Handler, private val tag: Any, private val url: String, private val method: Int, initHeaders: Map<String, Any>, initParams: Map<String, Any>, gzipEnabled: Boolean, private val preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)?, private val responseCallback: (response: BaseResponse) -> Boolean) {
+class Request internal constructor(private val requestQueue: RequestQueue, private val executorDeliveryHandler: Handler, private val mainLooperHandler: Handler, private val tag: Any, private val url: String, private val method: Int, initHeaders: Map<String, Any>, initParams: Map<String, Any>, gzipEnabled: Boolean, rp: RetryPolicy, private val preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)?, private val responseCallback: (response: BaseResponse) -> Boolean) {
 
     private companion object {
 
         const val EMPTY_JSON = "{}"
-
-        val retryPolicy = DisableRetryPolicy(20 * 1000)
 
     }
 
@@ -22,6 +21,7 @@ class Request internal constructor(private val requestQueue: RequestQueue, priva
     private val params = HashMap<String, String>()
 
     private var enableGZIP = gzipEnabled
+    private var retryPolicy = rp
     private var startRequestTime = 0L
 
     init {
@@ -43,6 +43,12 @@ class Request internal constructor(private val requestQueue: RequestQueue, priva
 
     fun enableGZIP(enable: Boolean): Request {
         enableGZIP = enable
+        return this
+    }
+
+    fun setTimeout(timeoutMs: Int): Request {
+        if (timeoutMs != retryPolicy.currentTimeout)
+            retryPolicy = DisableRetryPolicy(timeoutMs)
         return this
     }
 
@@ -90,17 +96,17 @@ class Request internal constructor(private val requestQueue: RequestQueue, priva
                 Log.d("OnResponse", " \nrequest   :  $requestUrl\ntimeconsum:  ${SystemClock.elapsedRealtime() - startRequestTime}ms\nresponse  :  $response\n\n  ")
             var responseIsJSON = true
             val responseEntity = try {
-                JSONUtil.fromJSON(response, type)
+                Requester.parseData(response, type)
             } catch (ignore: Throwable) {
                 responseIsJSON = false
-                JSONUtil.fromJSON(EMPTY_JSON, type)
+                Requester.parseData(EMPTY_JSON, type)
             }
             responseEntity.requestErrorCode = if (responseIsJSON) ErrorCode.NO_ERROR else ErrorCode.PARSE_DATA_ERROR
             responseEntity.responseData = response
             responseEntity.requestErrorCode = if (!responseCallback.invoke(responseEntity)) ErrorCode.CUSTOM_ERROR else responseEntity.requestErrorCode
             mainLooperHandler.post { listener.invoke(responseEntity) }
         } else {
-            val responseEntity = JSONUtil.fromJSON(EMPTY_JSON, type)
+            val responseEntity = Requester.parseData(EMPTY_JSON, type)
             responseEntity.requestErrorCode = ErrorCode.NO_RESPONSE_DATA
             mainLooperHandler.post { listener.invoke(responseEntity) }
         }
@@ -111,7 +117,7 @@ class Request internal constructor(private val requestQueue: RequestQueue, priva
             Log.d("OnRequestError", " \n request: $requestUrl")
             error.printStackTrace()
         }
-        val responseEntity = JSONUtil.fromJSON(EMPTY_JSON, type)
+        val responseEntity = Requester.parseData(EMPTY_JSON, type)
         responseEntity.requestErrorCode = ErrorCode.REQUEST_FAILED
         responseEntity.requestErrorCode = if (!responseCallback.invoke(responseEntity)) ErrorCode.CUSTOM_ERROR else ErrorCode.REQUEST_FAILED
         mainLooperHandler.post { listener.invoke(responseEntity) }

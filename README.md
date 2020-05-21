@@ -5,7 +5,7 @@
 不过官方已经很久不维护Volley了，使用方式在现在看来也已经非常过时了。本工具就是在Volley上进行二次封装，优化了使用方式和加入了一些小功能，新特性如下：
 - 将使用方式改为更加方便直观的链式调用
 - 可根据使用情况自动增加或减少最大并发量
-- 将数据解析和请求绑在了一起，请求返回直接就是最终的mode类
+- 将数据解析和请求绑在一起，请求直接返回最终mode类(默认使用GSON，可自定义解析器)
 - 性能优化，将一些没必要在主线程操作的事件移动到了子线程
 - 更加方便的和Activity/Fragment等控件生命周期绑定
 - 新增信任所有Https证书和导入指定证书的API
@@ -137,6 +137,14 @@ Requester.updateGlobalHeader(key: String, value: String?)
 Requester.enableGZIP(enable: Boolean)
 
 
+//设置超时时间，单位毫秒(ms)
+Requester.setTimeout(timeoutMs: Int)
+
+
+//设置自定义数据解析器(json解析)，默认解析器为GSON。如果你的工程里没有接入GSON，则必须在初始化之后立刻调用这个方法设置一个自定义解析器
+Requester.setDataParser(dataParser: DataParser)
+
+
 //当请求即将发送时，会自动回调这个callback，callback中的header, params都已经带上了所有参数。你可以在这个回调中对参数进行修改操作，比如加入新的参数，根据参数计算签名等
 Requester.setOnPreRequestCallback(callback: ((url: String, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?)
 
@@ -169,6 +177,10 @@ Request.addParam(field: String, value: Any?): Request
 
 //开关单个请求的GZIP压缩
 Request.enableGZIP(enable: Boolean): Request
+
+
+//设置单个请求的超时时间，单位毫秒(ms)
+Request.setTimeout(timeoutMs: Int): Request
 
 
 //同步开始网络请求
