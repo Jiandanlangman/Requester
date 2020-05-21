@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream
 import java.lang.ref.SoftReference
 import java.util.zip.GZIPInputStream
 
-open class StringRequest(method: Int, private val enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
+open class StringRequest(method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
 
     private companion object {
         val gzipHeaders = HashMap<String, String>()

@@ -81,7 +81,7 @@ Requester.get("user/list", "tag")
     ```
     然后编辑你app module的build.gradle文件，在dependencies节点下加入
     ```
-    implementation "com.jiandanlangman:requester:1.0.1@aar"  //主依赖
+    implementation "com.jiandanlangman:requester:1.0.2@aar"  //主依赖
     implementation "com.android.volley:volley:1.1.1"         //Volley，既然是基于Volley的，那肯定需要它
     implementation "com.google.code.gson:gson:2.8.6"         //GSON，json解析工具，如果你需要自定义DataParser，可不接入
     ```
@@ -101,7 +101,7 @@ Requester.init(application: Application, maxRequestQueueCount: Int, certInputStr
  * 创建一个post请求
  * @param url 请求地址，支持相对路径(需设置了默认路由)和绝对路径
  * @param tag 请求标记，可用于取消请求
- * Activity/Fragment/View等带生命周期的控件，建议TAG传入控件本身(this)，这样控件在销毁时能自动取消网络请求
+ * Activity、Fragment、View、Dialog建议使用扩展函数，这样控件在销毁时能自动取消网络请求
  * 其它TAG需要手动调用Requester.cancelAll(tag: String)来取消请求
  */
 Requester.post(url: String, tag: Any): Request
@@ -111,7 +111,7 @@ Requester.post(url: String, tag: Any): Request
  * 创建一个get请求
  * @param url 请求地址，支持相对路径(需设置了默认路由)和绝对路径
  * @param tag 请求标记，可用于取消请求
- * Activity/Fragment/View等带生命周期的控件，建议TAG传入控件本身(this)，这样控件在销毁时能自动取消网络请求
+ * Activity、Fragment、View、Dialog建议使用扩展函数，这样控件在销毁时能自动取消网络请求
  * 其它TAG需要手动调用Requester.cancelAll(tag: String)来取消请求
  */
 Requester.get(url: String, tag: Any): Request
@@ -121,9 +121,7 @@ Requester.get(url: String, tag: Any): Request
  * 创建一个网络请求
  * @param method 请求方式，支持GET、POST、PUT、DELETE等9种方式，具体可查阅com.android.volley.Request.Method
  * @param url 请求地址，支持相对路径(需设置了默认路由)和绝对路径
- * @param tag 请求标记，可用于取消请求
- * Activity/Fragment/View等带生命周期的控件，建议TAG传入控件本身(this)，这样控件在销毁时能自动取消网络请求
- * 其它TAG需要手动调用Requester.cancelAll(tag: String)来取消请求
+ * @param tag 请求标记，可用于Requester.cancelAll(tag: String)取消请求
  */
 fun request(method: Int, url: String, tag: Any): Request
 
@@ -222,11 +220,12 @@ Request.start(listener: (response: BaseResponse) -> Unit)
 <T : BaseResponse> Request.start(type: Class<T>, listener: (response: T) -> Unit) 
 ```
 ### 扩展函数及与生命周期绑定
-默认已实现Activity、Fragment(AndroidX)及View的扩展扩展函数。如需其它类的扩展，请自行实现  
-使用默认实现的扩展函数发起网络请求，则请求将自动与Activity、Fragment(AndroidX)及View的生命周期绑定，避免界面销毁后数据才返回，造成崩溃。请求将在以下生命周期函数中自动取消：
+默认已实现Activity、Fragment(AndroidX)、Dialog及View的扩展扩展函数。如需其它类的扩展，请自行实现  
+使用默认实现的扩展函数发起网络请求，则请求将自动与Activity、Fragment(AndroidX)、Dialog及View的生命周期绑定，避免界面销毁后数据才返回，造成崩溃。请求将在以下生命周期函数中自动取消：
 - Activity会自动在onDestroy时取消所有还未返回数据的网络请求
 - View会自动在onDetachedFromWindow时取消所有还未返回数据的网络请求
 - Fragment(AndroidX)会自动在其ContentView的onDetachedFromWindow或Fragment所依赖的Activity的onDestroy时自动取消所有还未返回数据的网络请求
+- Dialog会在其window.decorView的onDetachedFromWindow时取消所有还未返回数据的网络请求
 ##### 注意：
 - Fragment仅表示继承与AndroidX包下的Fragment，继承自其它包(app、support)没有这个扩展函数。推荐将工程由support迁移至AndroidX
 - 在Fragment的onCreateView之前发起网络请求会在Fragment所依赖的Activity的onDestroy时自动取消所有还未返回数据的网络请求
@@ -240,6 +239,8 @@ fun Fragment.post(url: String): Request
 fun Fragment.get(url: String): Request
 fun View.post(url: String): Request
 fun View.get(url: String): Request
+fun Dialog.post(url: String): Request
+fun Dialog.get(url: String): Request
 ```
 ### 更多
 更多功能及详细使用方法及说明请参考Demo

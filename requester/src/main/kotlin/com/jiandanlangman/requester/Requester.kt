@@ -31,8 +31,9 @@ object Requester {
     private lateinit var sslSocketFactory: SSLSocketFactory
     private lateinit var cacheDir: File
     private lateinit var mainLooperHandler: Handler
+    private lateinit var executorDeliveryHandler: Handler
 
-    private var executorDeliveryHandler: Handler? = null
+
     private var dataParser: DataParser? = null
     private var preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)? = null
     private var onResponseListener: ((BaseResponse) -> Boolean)? = null
@@ -43,11 +44,11 @@ object Requester {
             return
         init = true
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
-        cacheDir = File(application.externalCacheDir, "volley")
+        cacheDir = File(application.externalCacheDir, "requester")
         mainLooperHandler = Handler(Looper.getMainLooper())
         HttpsURLConnection.setDefaultHostnameVerifier { _, _ -> true }
         this.maxRequestQueueCount = if (maxRequestQueueCount > 0) maxRequestQueueCount else 1
-        val thread = HandlerThread("VolleyResponseDeliveryThread", Process.THREAD_PRIORITY_BACKGROUND)
+        val thread = HandlerThread("RequesterDeliveryThread", Process.THREAD_PRIORITY_BACKGROUND)
         thread.start()
         executorDeliveryHandler = Handler(thread.looper)
         val initRequestQueueCount = (maxRequestQueueCount + 1) / 2
@@ -129,7 +130,7 @@ object Requester {
 
     internal fun getRetryPolicy() = retryPolicy
 
-    internal fun postOnExecutorDeliveryHandler(runnable: Runnable) = executorDeliveryHandler!!.post(runnable)
+    internal fun postOnExecutorDeliveryHandler(runnable: Runnable) = executorDeliveryHandler.post(runnable)
 
     internal fun postOnMainLooperHandler(runnable: Runnable) = mainLooperHandler.post(runnable)
 

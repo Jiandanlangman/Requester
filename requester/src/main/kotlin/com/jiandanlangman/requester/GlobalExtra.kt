@@ -2,6 +2,7 @@ package com.jiandanlangman.requester
 
 import android.app.Activity
 import android.app.Application
+import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
 import android.view.View
@@ -69,6 +70,10 @@ fun View.get(url: String): Request {
     addOASCL(this)
     return Requester.get(url, this)
 }
+
+fun Dialog.post(url: String) = window!!.decorView.post(url)
+
+fun Dialog.get(url: String) = window!!.decorView.get(url)
 
 private fun addAlc(context: Context) {
     if (isAddAlc)
