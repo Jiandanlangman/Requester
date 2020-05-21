@@ -7,7 +7,7 @@
 - 可根据使用情况自动增加或减少最大并发量
 - 将数据解析和请求绑在一起，请求直接返回最终mode类(默认使用GSON，可自定义解析器)
 - 性能优化，将一些没必要在主线程操作的事件移动到了子线程
-- 更加方便的和Activity/Fragment等控件生命周期绑定
+- 支持扩展函数，自动和Activity、Fragment和View生命周期绑定
 - 新增信任所有Https证书和导入指定证书的API
 - GZIP支持(需要后端支持，否则打开也无效)
 - 更加方便的设置公共参数、公共请求头等
@@ -81,9 +81,9 @@ Requester.get("user/list", "tag")
     ```
     然后编辑你app module的build.gradle文件，在dependencies节点下加入
     ```
-    implementation "com.jiandanlangman:requester:1.0.0@aar"  //主依赖
+    implementation "com.jiandanlangman:requester:1.0.1@aar"  //主依赖
     implementation "com.android.volley:volley:1.1.1"         //Volley，既然是基于Volley的，那肯定需要它
-    implementation "com.google.code.gson:gson:2.8.6"         //GSON，json解析工具，必须的
+    implementation "com.google.code.gson:gson:2.8.6"         //GSON，json解析工具，如果你需要自定义DataParser，可不接入
     ```
 ### 主要API说明
 ```
@@ -97,12 +97,35 @@ Requester.get("user/list", "tag")
 Requester.init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null)
 
 
-//创建一个post请求，tag为标记，可用于取消请求，如果你不需要取消请求，随便传
-Requester.post(url: String, tag: Any) : Request
+/**
+ * 创建一个post请求
+ * @param url 请求地址，支持相对路径(需设置了默认路由)和绝对路径
+ * @param tag 请求标记，可用于取消请求
+ * Activity/Fragment/View等带生命周期的控件，建议TAG传入控件本身(this)，这样控件在销毁时能自动取消网络请求
+ * 其它TAG需要手动调用Requester.cancelAll(tag: String)来取消请求
+ */
+Requester.post(url: String, tag: Any): Request
 
 
-//创建一个get请求，tag为标记，可用于取消请求，如果你不需要取消请求，随便传
-Requester.get(url: String, tag: Any) : Request
+/**
+ * 创建一个get请求
+ * @param url 请求地址，支持相对路径(需设置了默认路由)和绝对路径
+ * @param tag 请求标记，可用于取消请求
+ * Activity/Fragment/View等带生命周期的控件，建议TAG传入控件本身(this)，这样控件在销毁时能自动取消网络请求
+ * 其它TAG需要手动调用Requester.cancelAll(tag: String)来取消请求
+ */
+Requester.get(url: String, tag: Any): Request
+
+
+/**
+ * 创建一个网络请求
+ * @param method 请求方式，支持GET、POST、PUT、DELETE等9种方式，具体可查阅com.android.volley.Request.Method
+ * @param url 请求地址，支持相对路径(需设置了默认路由)和绝对路径
+ * @param tag 请求标记，可用于取消请求
+ * Activity/Fragment/View等带生命周期的控件，建议TAG传入控件本身(this)，这样控件在销毁时能自动取消网络请求
+ * 其它TAG需要手动调用Requester.cancelAll(tag: String)来取消请求
+ */
+fun request(method: Int, url: String, tag: Any): Request
 
 
 //设置字符编码，默认为UTF-8，如果你需要的编码也是UTF-8，则无需设置
@@ -145,12 +168,17 @@ Requester.setTimeout(timeoutMs: Int)
 Requester.setDataParser(dataParser: DataParser)
 
 
-//当请求即将发送时，会自动回调这个callback，callback中的header, params都已经带上了所有参数。你可以在这个回调中对参数进行修改操作，比如加入新的参数，根据参数计算签名等
+/**
+ * 当请求即将发送时，会自动回调这个callback
+ * callback中的headers、params都已经带上了所有参数。你可以在这个回调中对参数进行修改操作，比如加入新的参数，根据参数计算签名等
+ * 这个回调不是在主线程中执行的，但所有网络请求的这个回调一定是在同一个线程。如果要在这里更新UI，请注意切换到主线程
+ */
 Requester.setOnPreRequestCallback(callback: ((url: String, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?)
 
 
  /**
   * 所有的请求返回到调用处之前，都会先回调到这个方法。你可以在这个方法里面做一些统一处理，比如判断返回数据的状态等
+  * 这个回调不是在主线程中执行的，但所有网络请求的这个回调一定是在同一个线程。如果要在这里更新UI，请注意切换到主线程
   * 回调参数说明:
   *   it.requestErrorCode如果等于ErrorCode.NO_ERROR，仅表示请求过程中没有错误发生，即请求正常发送到了后端，后端正常返回了结果。并不能用来表示后端返回数据的正确性
   *   更多错误码请参考ErrorCode枚举
@@ -193,5 +221,25 @@ Request.start()
 Request.start(listener: (response: BaseResponse) -> Unit)
 <T : BaseResponse> Request.start(type: Class<T>, listener: (response: T) -> Unit) 
 ```
+### 扩展函数及与生命周期绑定
+默认已实现Activity、Fragment(AndroidX)及View的扩展扩展函数。如需其它类的扩展，请自行实现  
+使用默认实现的扩展函数发起网络请求，则请求将自动与Activity、Fragment(AndroidX)及View的生命周期绑定，避免界面销毁后数据才返回，造成崩溃。请求将在以下生命周期函数中自动取消：
+- Activity会自动在onDestroy时取消所有还未返回数据的网络请求
+- View会自动在onDetachedFromWindow时取消所有还未返回数据的网络请求
+- Fragment(AndroidX)会自动在其ContentView的onDetachedFromWindow或Fragment所依赖的Activity的onDestroy时自动取消所有还未返回数据的网络请求
+##### 注意：
+- Fragment仅表示继承与AndroidX包下的Fragment，继承自其它包(app、support)没有这个扩展函数。推荐将工程由support迁移至AndroidX
+- 在Fragment的onCreateView之前发起网络请求会在Fragment所依赖的Activity的onDestroy时自动取消所有还未返回数据的网络请求
+- Activity的onDestroy之后、Fragment的onDestroyView之后、View的onDetachedFromWindow之后发起的网络请求，不会被自动取消
+
+已实现扩展函数原型如下：
+```
+fun Activity.post(url: String): Request
+fun Activity.get(url: String): Request
+fun Fragment.post(url: String): Request
+fun Fragment.get(url: String): Request
+fun View.post(url: String): Request
+fun View.get(url: String): Request
+```
 ### 更多
-全局扩展、与Activity/Fragment生命周期绑定、详细使用方法及说明请参考Demo
+更多功能及详细使用方法及说明请参考Demo

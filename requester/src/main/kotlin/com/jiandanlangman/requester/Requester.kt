@@ -1,6 +1,5 @@
 package com.jiandanlangman.requester
 
-import android.app.Activity
 import android.app.Application
 import android.os.*
 import com.android.volley.ExecutorDelivery
@@ -18,7 +17,6 @@ object Requester {
     private val globalHeaders = HashMap<String, Any>()
     private val globalParams = HashMap<String, Any>()
 
-    private val onResponseCallback: (BaseResponse) -> Boolean = { onResponseListener?.invoke(it) ?: true }
     private val requestQueues = ArrayList<RequestQueue>()
     private val requestQueueBurdens = HashMap<RequestQueue, Int>()
 
@@ -26,7 +24,7 @@ object Requester {
     private var showLog = true
     private var init = false
     private var maxRequestQueueCount = 1
-    private var enableGZIP = false
+    private var gzipEnabled = false
     private var routing = ""
     private var retryPolicy = DisableRetryPolicy(20 * 1000)
 
@@ -43,14 +41,18 @@ object Requester {
     fun init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null) {
         if (init)
             return
+        init = true
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
         cacheDir = File(application.externalCacheDir, "volley")
         mainLooperHandler = Handler(Looper.getMainLooper())
         HttpsURLConnection.setDefaultHostnameVerifier { _, _ -> true }
         this.maxRequestQueueCount = if (maxRequestQueueCount > 0) maxRequestQueueCount else 1
-        createRequestQueues()
-        listeningActivityLifecycle(application)
-        init = true
+        val thread = HandlerThread("VolleyResponseDeliveryThread", Process.THREAD_PRIORITY_BACKGROUND)
+        thread.start()
+        executorDeliveryHandler = Handler(thread.looper)
+        val initRequestQueueCount = (maxRequestQueueCount + 1) / 2
+        for (i in 0 until initRequestQueueCount)
+            createRequestQueue()
     }
 
 
@@ -87,7 +89,7 @@ object Requester {
     }
 
     fun enableGZIP(enable: Boolean) {
-        enableGZIP = enable
+        gzipEnabled = enable
     }
 
     fun setDefaultRouting(url: String?) {
@@ -115,68 +117,34 @@ object Requester {
 
     fun post(url: String, tag: Any) = request(com.android.volley.Request.Method.POST, url, tag)
 
+    fun request(method: Int, url: String, tag: Any) = Request(getRequestQueue(), tag, if (url.startsWith("http", true)) url else "$routing$url", method)
+
     fun cancelAll(tag: Any) = requestQueues.forEach { it.cancelAll(tag) }
 
     internal fun getCharset() = charset
 
     internal fun isShowLog() = showLog
 
+    internal fun getGZIPEnabled() = gzipEnabled
+
+    internal fun getRetryPolicy() = retryPolicy
+
+    internal fun postOnExecutorDeliveryHandler(runnable: Runnable) = executorDeliveryHandler!!.post(runnable)
+
+    internal fun postOnMainLooperHandler(runnable: Runnable) = mainLooperHandler.post(runnable)
+
+    internal fun getGlobalHeaders() = globalHeaders
+
+    internal fun getGlobalParams() = globalParams
+
+    internal fun onPreRequest(url: String, headers: HashMap<String, String>, params: HashMap<String, String>) = preRequestCallback?.invoke(url, headers, params)
+
+    internal fun onResponse(response: BaseResponse) = onResponseListener?.invoke(response) ?: true
+
     internal fun <T> parseData(json: String, clazz: Class<T>): T {
         if (dataParser == null)
             setDataParser(GSONDataParser())
         return dataParser!!.parseData(json, clazz)
-    }
-
-    private fun request(method: Int, url: String, tag: Any): Request {
-        val headers = HashMap<String, Any>()
-        headers.putAll(globalHeaders)
-        val params = HashMap<String, Any>()
-        params.putAll(globalParams)
-        val requestQueue = getRequestQueue()
-        return Request(requestQueue, executorDeliveryHandler!!, mainLooperHandler, tag, if (url.startsWith("http", true)) url else "$routing$url", method, headers, params, enableGZIP, retryPolicy, preRequestCallback, onResponseCallback)
-    }
-
-    private fun listeningActivityLifecycle(application: Application) = application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
-
-        override fun onActivityDestroyed(activity: Activity) = cancelAll(activity)
-
-        override fun onActivityStopped(activity: Activity) = Unit
-
-        override fun onActivityPaused(activity: Activity) = Unit
-
-        override fun onActivityStarted(activity: Activity) = Unit
-
-        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
-
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
-
-        override fun onActivityResumed(activity: Activity) = Unit
-
-    })
-
-    private fun createRequestQueues() {
-        val lock = Object()
-        val thread = Thread {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-            Looper.prepare()
-            executorDeliveryHandler = Handler(Looper.myLooper()!!)
-            synchronized(lock) { lock.notifyAll() }
-            Looper.loop()
-        }
-        thread.isDaemon = true
-        thread.name = "VolleyResponseDeliveryThread"
-        thread.start()
-        while (true) {
-            synchronized(lock) {
-                if (executorDeliveryHandler != null) {
-                    val requestQueueCount = (maxRequestQueueCount + 1) / 2
-                    for (i in 0 until requestQueueCount)
-                        createRequestQueue()
-                    return
-                }
-                lock.wait(16)
-            }
-        }
     }
 
     private fun createRequestQueue(): RequestQueue {
