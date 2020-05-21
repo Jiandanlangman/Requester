@@ -36,7 +36,7 @@ object Requester {
 
     private var dataParser: DataParser? = null
     private var preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)? = null
-    private var onResponseListener: ((BaseResponse) -> Boolean)? = null
+    private var onResponseListener: ((Response<out ParsedData>) -> Boolean)? = null
 
 
     fun init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null) {
@@ -57,7 +57,7 @@ object Requester {
     }
 
 
-    fun setOnResponseListener(listener: ((BaseResponse) -> Boolean)?) {
+    fun setOnResponseListener(listener: ((Response<out ParsedData>) -> Boolean)?) {
         onResponseListener = listener
     }
 
@@ -140,7 +140,7 @@ object Requester {
 
     internal fun onPreRequest(url: String, headers: HashMap<String, String>, params: HashMap<String, String>) = preRequestCallback?.invoke(url, headers, params)
 
-    internal fun onResponse(response: BaseResponse) = onResponseListener?.invoke(response) ?: true
+    internal fun onResponse(response: Response<out ParsedData>) = onResponseListener?.invoke(response) ?: true
 
     internal fun <T> parseData(json: String, clazz: Class<T>): T {
         if (dataParser == null)

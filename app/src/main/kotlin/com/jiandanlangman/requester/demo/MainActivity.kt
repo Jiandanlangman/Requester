@@ -1,14 +1,12 @@
 package com.jiandanlangman.requester.demo
 
 import android.os.Bundle
-import com.jiandanlangman.requester.post
 
 class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        post("")
         //一个简单的请求案例
 //        post("user/list")
 //            .addParam("page_index", 1)

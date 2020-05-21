@@ -28,7 +28,9 @@ Requester.post("user/list", "tag")
          .addParam("created_from", "home")
          .addHeader("device", "test")
          .start(UserList:class.java) { response ->
-
+             //response.requestErrorCode判断错误码
+             //response.parsedData为解析好后的对象，当不指定类型时，这个对象为BaseParsedData
+             //response.responseData为服务器返回的原始数据
          }
 ```
 支持同步请求(同步请求不要在主线程做):
@@ -184,7 +186,7 @@ Requester.setOnPreRequestCallback(callback: ((url: String, headers: HashMap<Stri
   *  返回true则最终返回到调用者处的ErrorCode不会发生变化
   *  返回false则最终返回到调用者处的ErrorCode会变为ErrorCode.CUSTOM_ERROR，表示全局回调已经处理并确认这个数据是错误的
   */
-Requester.setOnResponseListener(listener: ((BaseResponse) -> Boolean)?)
+Requester.setOnResponseListener(listener: ((Response<out ParsedData>) -> Boolean)?)
 
 
 //取消这个tag的所有网络请求，一般用在和Activity/Fragment生命周期绑定
@@ -210,14 +212,14 @@ Request.setTimeout(timeoutMs: Int): Request
 
 
 //同步开始网络请求
-Request.sync() : BaseResponseEntity
-<T : BaseResponse> Request.sync(type: Class<T>): T
+Request.sync() : Response<BaseParsedData>
+<T : ParsedData> Request.sync(type: Class<T>): Response<T>
 
 
 //异步开始网络请求
 Request.start()
-Request.start(listener: (response: BaseResponse) -> Unit)
-<T : BaseResponse> Request.start(type: Class<T>, listener: (response: T) -> Unit) 
+Request.start(listener: (response: Response<BaseParsedData>) -> Unit) = start(BaseParsedData::class.java, listener)
+<T : ParsedData> Request.start(type: Class<T>, listener: (response: Response<T>) -> Unit)
 ```
 ### 扩展函数及与生命周期绑定
 默认已实现Activity、Fragment(AndroidX)、Dialog及View的扩展扩展函数。如需其它类的扩展，请自行实现  

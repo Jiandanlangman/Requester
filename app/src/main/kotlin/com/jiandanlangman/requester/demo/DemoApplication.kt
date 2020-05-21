@@ -8,11 +8,10 @@ import java.nio.charset.Charset
 
 class DemoApplication : Application() {
 
+
+
     override fun onCreate() {
         super.onCreate()
-        //需要依赖Volley和GSON
-//        implementation "com.android.volley:volley:1.1.1"
-//        implementation "com.google.code.gson:gson:2.8.6"
 
         /**
          * 初始化方法，必须调用
@@ -39,14 +38,19 @@ class DemoApplication : Application() {
         Requester.showLog(BuildConfig.DEBUG)
 
         val globalParams = HashMap<String, String>()
-        globalParams["uid"] = "12345"
-        globalParams["token"] = "abcde"
+        globalParams["p"] = "android"
+        globalParams["_lang"] = "CN_zh-Hans"
+        globalParams["c"] = "google"
+        globalParams["v"] = "1015"
+        globalParams["n"] = "xxx"
+        globalParams["_uid"] = "14043"
+        globalParams["token"] = "12595d2aX9eccY4bcaY8d78Ya64218aa2f91"
         //设置全局参数，及所有的请求都会默认带上这些参数，这些参数可以被Request的addParam、Requester.setPreRequestCallback替换掉
         //如果你的请求没有全局参数，可以不调用这个方法
         Requester.setGlobalParams(globalParams)
 
         //更新单个全局参数，如果value为null，则表示删除这个全局参数
-        Requester.updateGlobalParam("uid", "45678")
+//        Requester.updateGlobalParam("uid", "45678")
 
         //设置和更新全局请求头，使用方法和设置全局参数一模一样
         //如果你的请求没有全局请求头，可以不调用这个方法
@@ -105,5 +109,7 @@ class DemoApplication : Application() {
         //取消这个tag的所有网络请求
         Requester.cancelAll("aaaaa")
     }
+
+
 
 }
