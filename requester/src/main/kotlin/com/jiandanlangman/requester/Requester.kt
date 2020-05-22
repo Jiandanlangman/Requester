@@ -51,9 +51,11 @@ object Requester {
         val thread = HandlerThread("RequesterDeliveryThread", Process.THREAD_PRIORITY_BACKGROUND)
         thread.start()
         executorDeliveryHandler = Handler(thread.looper)
-        val initRequestQueueCount = (maxRequestQueueCount + 1) / 2
-        for (i in 0 until initRequestQueueCount)
-            createRequestQueue()
+        executorDeliveryHandler.post {
+            val initRequestQueueCount = (maxRequestQueueCount + 1) / 2
+            for (i in 0 until initRequestQueueCount)
+                createRequestQueue()
+        }
     }
 
 
@@ -118,7 +120,7 @@ object Requester {
 
     fun post(url: String, tag: Any) = request(com.android.volley.Request.Method.POST, url, tag)
 
-    fun request(method: Int, url: String, tag: Any) = Request(getRequestQueue(), tag, if (url.startsWith("http", true)) url else "$routing$url", method)
+    fun request(method: Int, url: String, tag: Any) = Request(tag, if (url.startsWith("http", true)) url else "$routing$url", method)
 
     fun cancelAll(tag: Any) = requestQueues.forEach { it.cancelAll(tag) }
 
@@ -148,18 +150,7 @@ object Requester {
         return dataParser!!.parseData(json, clazz)
     }
 
-    private fun createRequestQueue(): RequestQueue {
-        val cache = DiskBasedCache(cacheDir)
-        val network = BasicNetwork(HurlStack(null, sslSocketFactory))
-        val requestQueue = RequestQueue(cache, network, 4, ExecutorDelivery(executorDeliveryHandler))
-        requestQueue.setRequestAddListener { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) + 1 }
-        requestQueue.addRequestFinishedListener<StringRequest> { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) - 1 }
-        requestQueues.add(requestQueue)
-        requestQueue.start()
-        return requestQueue
-    }
-
-    private fun getRequestQueue(): RequestQueue {
+    internal fun getRequestQueue(): RequestQueue {
         var burdens = Int.MAX_VALUE
         var requestQueue = requestQueues[0]
         requestQueues.forEach {
@@ -177,6 +168,18 @@ object Requester {
             return createRequestQueue()
         return requestQueue
     }
+
+    private fun createRequestQueue(): RequestQueue {
+        val cache = DiskBasedCache(cacheDir)
+        val network = BasicNetwork(HurlStack(null, sslSocketFactory))
+        val requestQueue = RequestQueue(cache, network, 4, ExecutorDelivery(executorDeliveryHandler))
+        requestQueue.setRequestAddListener { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) + 1 }
+        requestQueue.addRequestFinishedListener<StringRequest> { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) - 1 }
+        requestQueues.add(requestQueue)
+        requestQueue.start()
+        return requestQueue
+    }
+
 
     private fun stopExcessRequestQueue() {
         val excessRequestQueues = requestQueues.filter { requestQueueBurdens[it] == null || requestQueueBurdens[it] == 0 }

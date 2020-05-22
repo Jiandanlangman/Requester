@@ -6,7 +6,7 @@ import com.android.volley.Response
 import com.android.volley.VolleyError
 
 
-class Request internal constructor(private val requestQueue: RequestQueue, private val tag: Any, private val url: String, private val method: Int) {
+class Request internal constructor(private val tag: Any, private val url: String, private val method: Int) {
 
     private companion object {
 
@@ -84,7 +84,7 @@ class Request internal constructor(private val requestQueue: RequestQueue, priva
             }, Response.ErrorListener {
                 handleError(requestUrl, it, type, listener)
             }).setRetryPolicy(retryPolicy).setShouldCache(false).setTag(tag)
-            requestQueue.add(request)
+            Requester.getRequestQueue().add(request)
         })
     }
 
