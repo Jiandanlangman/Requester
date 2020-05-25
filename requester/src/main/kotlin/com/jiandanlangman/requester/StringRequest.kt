@@ -7,26 +7,23 @@ import com.android.volley.toolbox.HttpHeaderParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.lang.ref.SoftReference
+import java.nio.charset.Charset
 import java.util.zip.GZIPInputStream
 
-open class StringRequest(method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
+internal class StringRequest(private val charset: Charset, method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
 
     private companion object {
-        val gzipHeaders = HashMap<String, String>()
         val bufferPool = Pools.SynchronizedPool<SoftReference<ByteArray>>(8)
-
-        init {
-            gzipHeaders["Charset"] = Requester.getCharset().displayName()
-            gzipHeaders["Accept-Encoding"] = "gzip"
-        }
     }
 
     private val headers = HashMap<String, String>()
 
     init {
         this.headers.putAll(headers)
-        if (enableGZIP)
-            this.headers.putAll(gzipHeaders)
+        if (enableGZIP) {
+            this.headers["Charset"] = charset.displayName()
+            this.headers["Accept-Encoding"] = "gzip"
+        }
     }
 
     override fun getParams() = params
@@ -35,7 +32,7 @@ open class StringRequest(method: Int, enableGZIP: Boolean, url: String, headers:
 
     override fun parseNetworkResponse(response: NetworkResponse): Response<String> {
         if ("gzip".equals(response.headers["Content-Encoding"], true))
-            return Response.success(String(uncompress(response.data), Requester.getCharset()), HttpHeaderParser.parseCacheHeaders(response))
+            return Response.success(String(uncompress(response.data), charset), HttpHeaderParser.parseCacheHeaders(response))
         return super.parseNetworkResponse(response)
     }
 

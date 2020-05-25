@@ -5,7 +5,7 @@ import com.android.volley.Network
 import com.android.volley.Request
 import com.android.volley.ResponseDelivery
 
-class RequestQueue(cache: Cache, network: Network, threadPoolSize: Int, delivery: ResponseDelivery) : com.android.volley.RequestQueue(cache, network, threadPoolSize, delivery) {
+internal class RequestQueue(cache: Cache, network: Network, threadPoolSize: Int, delivery: ResponseDelivery) : com.android.volley.RequestQueue(cache, network, threadPoolSize, delivery) {
 
     private var requestAddListener: (Request<*>) -> Unit = {}
 

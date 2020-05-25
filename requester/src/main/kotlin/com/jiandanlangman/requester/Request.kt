@@ -6,7 +6,7 @@ import com.android.volley.Response
 import com.android.volley.VolleyError
 
 
-class Request internal constructor(private val tag: Any, private val url: String, private val method: Int) {
+class Request internal constructor(private val parameterProvider: ParameterProvider, private val tag: Any, private val url: String, private val method: Int) {
 
     private companion object {
 
@@ -17,8 +17,8 @@ class Request internal constructor(private val tag: Any, private val url: String
     private val headers = HashMap<String, String>()
     private val params = HashMap<String, String>()
 
-    private var gzipEnabled = Requester.getGZIPEnabled()
-    private var retryPolicy = Requester.getRetryPolicy()
+    private var gzipEnabled = parameterProvider.getGZIPEnabled()
+    private var retryPolicy = parameterProvider.getRetryPolicy()
     private var startRequestTime = 0L
 
 
@@ -68,60 +68,60 @@ class Request internal constructor(private val tag: Any, private val url: String
     fun start(listener: (response: com.jiandanlangman.requester.Response<BaseParsedData>) -> Unit) = start(BaseParsedData::class.java, listener)
 
     fun <T : ParsedData> start(type: Class<T>, listener: (response: com.jiandanlangman.requester.Response<T>) -> Unit) {
-        Requester.postOnExecutorDeliveryHandler(Runnable {
-            val globalHeaders = Requester.getGlobalHeaders()
+        parameterProvider.getExecutorDeliveryHandler().post {
+            val globalHeaders = parameterProvider.getGlobalHeaders()
             globalHeaders.keys.filter { !headers.containsKey(it) }.forEach { headers[it] = globalHeaders[it].toString() }
-            val globalParams = Requester.getGlobalParams()
+            val globalParams = parameterProvider.getGlobalParams()
             globalParams.keys.filter { !params.containsKey(it) }.forEach { params[it] = globalParams[it].toString() }
-            Requester.onPreRequest(url, headers, params)
+            parameterProvider.getPreRequestCallback()?.invoke(url, headers, params)
             val requestUrl = generateFullUrl()
-            if (Requester.isShowLog()) {
+            if (parameterProvider.isShowLog()) {
                 startRequestTime = SystemClock.elapsedRealtime()
                 Log.d("StartRequest", "request: $requestUrl")
             }
-            val request = StringRequest(method, gzipEnabled, if (method == com.android.volley.Request.Method.GET) generateFullUrl() else url, headers, params, Response.Listener {
+            val request = StringRequest(parameterProvider.getCharset(), method, gzipEnabled, if (method == com.android.volley.Request.Method.GET) generateFullUrl() else url, headers, params, Response.Listener {
                 handleResponse(requestUrl, it ?: "", type, listener)
             }, Response.ErrorListener {
                 handleError(requestUrl, it, type, listener)
             }).setRetryPolicy(retryPolicy).setShouldCache(false).setTag(tag)
-            Requester.getRequestQueue().add(request)
-        })
+            parameterProvider.getRequestQueue().add(request)
+        }
     }
 
     private fun <T : ParsedData> handleResponse(requestUrl: String, response: String, type: Class<T>, listener: (response: com.jiandanlangman.requester.Response<T>) -> Unit) {
         if (response.isNotEmpty()) {
-            if (Requester.isShowLog())
+            if (parameterProvider.isShowLog())
                 Log.d("OnResponse", " \nrequest   :  $requestUrl\ntimeconsum:  ${SystemClock.elapsedRealtime() - startRequestTime}ms\nresponse  :  $response\n\n  ")
             var responseIsJSON = true
             val parsedData = try {
-                Requester.parseData(response, type)
+                parameterProvider.parseData(response, type)
             } catch (ignore: Throwable) {
                 responseIsJSON = false
-                Requester.parseData(EMPTY_JSON, type)
+                parameterProvider.parseData(EMPTY_JSON, type)
             }
             var resp = Response(if (responseIsJSON) ErrorCode.NO_ERROR else ErrorCode.PARSE_DATA_ERROR, response, parsedData)
-            if (!Requester.onResponse(resp))
+            if (parameterProvider.getOnResponseListener()?.invoke(resp) == false)
                 resp = Response(ErrorCode.CUSTOM_ERROR, response, parsedData)
-            Requester.postOnMainLooperHandler(Runnable { listener.invoke(resp) })
+            parameterProvider.getMainLooperHandler().post { listener.invoke(resp) }
         } else {
-            val parsedData = Requester.parseData(EMPTY_JSON, type)
+            val parsedData = parameterProvider.parseData(EMPTY_JSON, type)
             var resp = Response(ErrorCode.NO_RESPONSE_DATA, EMPTY_JSON, parsedData)
-            if (!Requester.onResponse(resp))
+            if (parameterProvider.getOnResponseListener()?.invoke(resp) == false)
                 resp = Response(ErrorCode.CUSTOM_ERROR, EMPTY_JSON, parsedData)
-            Requester.postOnMainLooperHandler(Runnable { listener.invoke(resp) })
+            parameterProvider.getMainLooperHandler().post { listener.invoke(resp) }
         }
     }
 
     private fun <T : ParsedData> handleError(requestUrl: String, error: VolleyError, type: Class<T>, listener: (response: com.jiandanlangman.requester.Response<T>) -> Unit) {
-        if (Requester.isShowLog()) {
+        if (parameterProvider.isShowLog()) {
             Log.d("OnRequestError", " \n request: $requestUrl")
             error.printStackTrace()
         }
-        val parsedData = Requester.parseData(EMPTY_JSON, type)
+        val parsedData = parameterProvider.parseData(EMPTY_JSON, type)
         var resp = Response(ErrorCode.REQUEST_FAILED, EMPTY_JSON, parsedData)
-        if (!Requester.onResponse(resp))
+        if (parameterProvider.getOnResponseListener()?.invoke(resp) == false)
             resp = Response(ErrorCode.CUSTOM_ERROR, EMPTY_JSON, parsedData)
-        Requester.postOnMainLooperHandler(Runnable { listener.invoke(resp) })
+        parameterProvider.getMainLooperHandler().post { listener.invoke(resp) }
     }
 
 

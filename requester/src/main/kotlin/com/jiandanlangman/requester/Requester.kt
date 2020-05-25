@@ -20,6 +20,38 @@ object Requester {
     private val requestQueues = ArrayList<RequestQueue>()
     private val requestQueueBurdens = HashMap<RequestQueue, Int>()
 
+    private  val parameterProvider = object : ParameterProvider {
+
+        override fun getCharset() = charset
+
+        override fun isShowLog() = showLog
+
+        override fun getGZIPEnabled() = gzipEnabled
+
+        override fun getRetryPolicy() = retryPolicy
+
+        override fun getGlobalHeaders() = globalHeaders
+
+        override fun getGlobalParams() = globalParams
+
+        override fun getExecutorDeliveryHandler() = executorDeliveryHandler
+
+        override fun getMainLooperHandler() = mainLooperHandler
+
+        override fun getPreRequestCallback() = preRequestCallback
+
+        override fun getOnResponseListener() = onResponseListener
+
+        override fun getRequestQueue() = this@Requester.getRequestQueue()
+
+        override fun <T> parseData(json: String, clazz: Class<T>): T {
+            if (dataParser == null)
+                setDataParser(GSONDataParser())
+            return dataParser!!.parseData(json, clazz)
+        }
+
+    }
+
     private var charset = Charset.forName("UTF-8")
     private var showLog = true
     private var init = false
@@ -32,6 +64,8 @@ object Requester {
     private lateinit var cacheDir: File
     private lateinit var mainLooperHandler: Handler
     private lateinit var executorDeliveryHandler: Handler
+
+
 
 
     private var dataParser: DataParser? = null
@@ -67,24 +101,24 @@ object Requester {
         preRequestCallback = callback
     }
 
-    fun setGlobalHeaders(headers: Map<String, String>) {
+    fun setGlobalHeaders(headers: Map<String, Any>) {
         globalHeaders.clear()
         globalHeaders.putAll(headers)
     }
 
-    fun updateGlobalHeader(key: String, value: String?) {
+    fun updateGlobalHeader(key: String, value: Any?) {
         if (value == null)
             globalHeaders.remove(key)
         else
             globalHeaders[key] = value
     }
 
-    fun setGlobalParams(params: Map<String, String>) {
+    fun setGlobalParams(params: Map<String, Any>) {
         globalParams.clear()
         globalParams.putAll(params)
     }
 
-    fun updateGlobalParam(key: String, value: String?) {
+    fun updateGlobalParam(key: String, value: Any?) {
         if (value == null)
             globalParams.remove(key)
         else
@@ -120,37 +154,12 @@ object Requester {
 
     fun post(url: String, tag: Any) = request(com.android.volley.Request.Method.POST, url, tag)
 
-    fun request(method: Int, url: String, tag: Any) = Request(tag, if (url.startsWith("http", true)) url else "$routing$url", method)
+    fun request(method: Int, url: String, tag: Any) = Request(parameterProvider, tag, if (url.startsWith("http", true)) url else "$routing$url", method)
 
     fun cancelAll(tag: Any) = requestQueues.forEach { it.cancelAll(tag) }
 
-    internal fun getCharset() = charset
 
-    internal fun isShowLog() = showLog
-
-    internal fun getGZIPEnabled() = gzipEnabled
-
-    internal fun getRetryPolicy() = retryPolicy
-
-    internal fun postOnExecutorDeliveryHandler(runnable: Runnable) = executorDeliveryHandler.post(runnable)
-
-    internal fun postOnMainLooperHandler(runnable: Runnable) = mainLooperHandler.post(runnable)
-
-    internal fun getGlobalHeaders() = globalHeaders
-
-    internal fun getGlobalParams() = globalParams
-
-    internal fun onPreRequest(url: String, headers: HashMap<String, String>, params: HashMap<String, String>) = preRequestCallback?.invoke(url, headers, params)
-
-    internal fun onResponse(response: Response<out ParsedData>) = onResponseListener?.invoke(response) ?: true
-
-    internal fun <T> parseData(json: String, clazz: Class<T>): T {
-        if (dataParser == null)
-            setDataParser(GSONDataParser())
-        return dataParser!!.parseData(json, clazz)
-    }
-
-    internal fun getRequestQueue(): RequestQueue {
+    private fun getRequestQueue(): RequestQueue {
         var burdens = Int.MAX_VALUE
         var requestQueue = requestQueues[0]
         requestQueues.forEach {

@@ -9,7 +9,7 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
-object HTTPSManager {
+internal object HTTPSManager {
 
     fun buildSSLSocketFactory(inputStream: InputStream?): SSLSocketFactory {
         val sslContext = SSLContext.getInstance("TLS")
