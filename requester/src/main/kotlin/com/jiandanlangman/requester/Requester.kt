@@ -8,7 +8,6 @@ import com.android.volley.toolbox.DiskBasedCache
 import com.android.volley.toolbox.HurlStack
 import java.io.File
 import java.io.InputStream
-import java.nio.charset.Charset
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
