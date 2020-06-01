@@ -128,7 +128,12 @@ Requester.get(url: String, tag: Any): Request
 fun request(method: Int, url: String, tag: Any): Request
 
 
-//设置字符编码，默认为UTF-8，如果你需要的编码也是UTF-8，则无需设置
+/**
+ * 设置字符编码
+ * 设置字符编码后，能保证请求发送到服务器的headers、params一定为设置的字符编码
+ * 但不能保证服务器返回的字符编码一定为设置的编码
+ * @param charset 字符编码，默认为UTF-8
+ */
 Requester.setCharset(charset: Charset)
 
 

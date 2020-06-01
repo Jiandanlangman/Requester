@@ -2,11 +2,10 @@ package com.jiandanlangman.requester
 
 import android.os.Handler
 import com.android.volley.RetryPolicy
-import java.nio.charset.Charset
 
 internal interface ParameterProvider {
 
-    fun getCharset(): Charset
+    fun getCharset(): String
 
     fun isShowLog(): Boolean
 
@@ -26,7 +25,7 @@ internal interface ParameterProvider {
 
     fun getOnResponseListener(): ((response: Response<out ParsedData>) -> Boolean)?
 
-    fun getRequestQueue() : RequestQueue
+    fun getRequestQueue(): RequestQueue
 
     fun <T> parseData(json: String, clazz: Class<T>): T
 

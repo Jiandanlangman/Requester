@@ -28,7 +28,7 @@ class DemoApplication : Application() {
 //        inputStream.close()
 
         //字符编码，默认为UTF-8，如果你需要的编码也是UTF-8，则无需设置
-        Requester.setCharset(Charset.forName("UTF-8"))
+        Requester.setCharset("UTF-8")
 
         //设置请求默认路由，及URL前缀，如果不设置，则发起网络请求必须使用绝对地址
         //如果你设置的是: "https://www.baidu.com/"，后续请求时只需传入接口名称即可。比如: "test?a=b"，则实际请求的地址是: "https://www.baidu.com/test?a=b"

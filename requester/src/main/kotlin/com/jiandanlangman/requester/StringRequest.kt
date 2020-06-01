@@ -10,7 +10,7 @@ import java.lang.ref.SoftReference
 import java.nio.charset.Charset
 import java.util.zip.GZIPInputStream
 
-internal class StringRequest(private val charset: Charset, method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
+internal class StringRequest(private val charset: String, method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
 
     private companion object {
         val bufferPool = Pools.SynchronizedPool<SoftReference<ByteArray>>(8)
@@ -20,10 +20,9 @@ internal class StringRequest(private val charset: Charset, method: Int, enableGZ
 
     init {
         this.headers.putAll(headers)
-        if (enableGZIP) {
-            this.headers["Charset"] = charset.displayName()
+        this.headers["Accept-Charset"] = charset
+        if (enableGZIP)
             this.headers["Accept-Encoding"] = "gzip"
-        }
     }
 
     override fun getParams() = params
@@ -32,10 +31,11 @@ internal class StringRequest(private val charset: Charset, method: Int, enableGZ
 
     override fun parseNetworkResponse(response: NetworkResponse): Response<String> {
         if ("gzip".equals(response.headers["Content-Encoding"], true))
-            return Response.success(String(uncompress(response.data), charset), HttpHeaderParser.parseCacheHeaders(response))
+            return Response.success(String(uncompress(response.data), Charset.forName(HttpHeaderParser.parseCharset(response.headers))), HttpHeaderParser.parseCacheHeaders(response))
         return super.parseNetworkResponse(response)
     }
 
+    override fun getParamsEncoding() = charset
 
     private fun uncompress(src: ByteArray): ByteArray {
         val baos = ByteArrayOutputStream()

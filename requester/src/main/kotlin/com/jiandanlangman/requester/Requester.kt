@@ -20,7 +20,7 @@ object Requester {
     private val requestQueues = ArrayList<RequestQueue>()
     private val requestQueueBurdens = HashMap<RequestQueue, Int>()
 
-    private  val parameterProvider = object : ParameterProvider {
+    private val parameterProvider = object : ParameterProvider {
 
         override fun getCharset() = charset
 
@@ -52,7 +52,7 @@ object Requester {
 
     }
 
-    private var charset = Charset.forName("UTF-8")
+    private var charset = "UTF-8"
     private var showLog = true
     private var init = false
     private var maxRequestQueueCount = 1
@@ -64,8 +64,6 @@ object Requester {
     private lateinit var cacheDir: File
     private lateinit var mainLooperHandler: Handler
     private lateinit var executorDeliveryHandler: Handler
-
-
 
 
     private var dataParser: DataParser? = null
@@ -133,7 +131,7 @@ object Requester {
         routing = url ?: ""
     }
 
-    fun setCharset(charset: Charset) {
+    fun setCharset(charset: String) {
         this.charset = charset
     }
 
