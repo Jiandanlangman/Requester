@@ -77,7 +77,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
         parameterProvider.getExecutorDeliveryHandler().post {
             val globalHeaders = parameterProvider.getGlobalHeaders()
             globalHeaders.keys.filter { !headers.containsKey(it) }.forEach { headers[it] = globalHeaders[it].toString() }
-            val host = URL(url).protocol
+            val host = URL(url).host
             headers["Host"] = host
             val globalParams = parameterProvider.getGlobalParams()
             globalParams.keys.filter { !params.containsKey(it) }.forEach { params[it] = globalParams[it].toString() }
