@@ -16,6 +16,8 @@
 - 不用检查null，拿到返回值直接就开干，怎么搞都不会崩
 - 支持设置默认路由
 - 更加直观的日志，和开启日志的方法
+- 支持接口缓存
+- 支持自定义DNS解析
 - 其它更多特性
 
 该控件使用Kotlin编写，所以你的项目必须接入Kotlin才能正常使用
@@ -83,7 +85,7 @@ Requester.get("user/list", "tag")
     ```
     然后编辑你app module的build.gradle文件，在dependencies节点下加入
     ```
-    implementation "com.jiandanlangman:requester:1.0.2@aar"  //主依赖
+    implementation "com.jiandanlangman:requester:1.0.4@aar"  //主依赖
     implementation "com.android.volley:volley:1.1.1"         //Volley，既然是基于Volley的，那肯定需要它
     implementation "com.google.code.gson:gson:2.8.6"         //GSON，json解析工具，如果你需要自定义DataParser，可不接入
     ```
@@ -195,9 +197,23 @@ Requester.setOnResponseListener(listener: ((Response<out ParsedData>) -> Boolean
 
 
 //取消这个tag的所有网络请求，一般用在和Activity/Fragment生命周期绑定
-Requester. cancelAll(tag: Any)
+Requester.cancelAll(tag: Any)
 
 
+/**启用接口缓存
+ * 当启用接口缓存后，在存在缓存的情况下，每次请求会返回两次，一次为Cache，一次为服务器返回的数据
+ * 每次服务器返回数据后，如果请求没有出错，则会缓存这次请求的返回值
+ * 可通过Response中的isCache判断是否是缓存的结果
+ * @param cacheManager 缓存管理器，用于自定义缓存策略，传入null表示禁用接口缓存功能，默认null
+ */
+Requester.setCacheManager(cacheManager: CacheManager?)
+
+
+/**
+ * 启用自定义DNS解析
+ * @param dns 自定义DNS解析器。里面只有一个方法:lookup，传入host。返回host对应的IP。传入null表示禁用自定义DNS解析。默认null
+ */
+Requester.setDNS(dns: DNS?)
 
 
 //添加请求头
@@ -214,6 +230,10 @@ Request.enableGZIP(enable: Boolean): Request
 
 //设置单个请求的超时时间，单位毫秒(ms)
 Request.setTimeout(timeoutMs: Int): Request
+
+
+//此次请求禁用接口缓存
+Request.disableCache(): Request
 
 
 //同步开始网络请求

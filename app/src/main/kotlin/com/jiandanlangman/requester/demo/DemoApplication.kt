@@ -1,13 +1,35 @@
 package com.jiandanlangman.requester.demo
 
 import android.app.Application
+import android.content.Context
+import android.os.Build
+import com.jiandanlangman.requester.DNS
 import com.jiandanlangman.requester.ErrorCode
 import com.jiandanlangman.requester.Requester
 import org.json.JSONObject
+import java.lang.reflect.Method
 import java.nio.charset.Charset
 
 class DemoApplication : Application() {
 
+
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        exemptionAllHiddenApis()
+    }
+
+
+    private fun exemptionAllHiddenApis() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                val getDeclaredMethodMethod = Class::class.java.getDeclaredMethod("getDeclaredMethod", String::class.java, arrayOf(Class::class.java)::class.java)
+                val vmRuntimeClass = Class::class.java.getDeclaredMethod("forName", String::class.java).invoke(null, "dalvik.system.VMRuntime")
+                (getDeclaredMethodMethod.invoke(vmRuntimeClass, "setHiddenApiExemptions", arrayOf(Array<String>::class.java)) as Method).invoke((getDeclaredMethodMethod.invoke(vmRuntimeClass, "getRuntime", null) as Method).invoke(null), arrayOf("L"))
+            } catch (ignore: Throwable) {
+
+            }
+        }
+    }
 
 
     override fun onCreate() {

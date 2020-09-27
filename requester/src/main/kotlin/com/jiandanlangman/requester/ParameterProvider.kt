@@ -29,4 +29,8 @@ internal interface ParameterProvider {
 
     fun <T> parseData(json: String, clazz: Class<T>): T
 
+    fun getCacheManager(): CacheManager?
+
+    fun getDNS(): DNS?
+
 }

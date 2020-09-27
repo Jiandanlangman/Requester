@@ -49,6 +49,10 @@ object Requester {
             return dataParser!!.parseData(json, clazz)
         }
 
+        override fun getCacheManager() = cacheManager
+
+        override fun getDNS() = dns
+
     }
 
     private var charset = "UTF-8"
@@ -68,12 +72,14 @@ object Requester {
     private var dataParser: DataParser? = null
     private var preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)? = null
     private var onResponseListener: ((Response<out ParsedData>) -> Boolean)? = null
+    private var cacheManager: CacheManager? = null
+    private var dns: DNS? = null
 
 
+    @Synchronized
     fun init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null) {
         if (init)
             return
-        init = true
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
         cacheDir = File(application.externalCacheDir, "requester")
         mainLooperHandler = Handler(Looper.getMainLooper())
@@ -87,6 +93,7 @@ object Requester {
             for (i in 0 until initRequestQueueCount)
                 createRequestQueue()
         }
+        init = true
     }
 
 
@@ -145,6 +152,14 @@ object Requester {
 
     fun setDataParser(dataParser: DataParser) {
         this.dataParser = dataParser
+    }
+
+    fun setCacheManager(cacheManager: CacheManager?) {
+        this.cacheManager = cacheManager
+    }
+
+    fun setDNS(dns: DNS?) {
+        this.dns = dns
     }
 
     fun get(url: String, tag: Any) = request(com.android.volley.Request.Method.GET, url, tag)
