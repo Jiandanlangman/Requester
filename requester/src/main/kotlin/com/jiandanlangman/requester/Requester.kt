@@ -1,15 +1,20 @@
 package com.jiandanlangman.requester
 
 import android.app.Application
-import android.os.*
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
+import android.os.Process
 import com.android.volley.ExecutorDelivery
 import com.android.volley.toolbox.BasicNetwork
 import com.android.volley.toolbox.DiskBasedCache
+import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.HurlStack
 import java.io.File
 import java.io.InputStream
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
+
 
 object Requester {
 
@@ -80,6 +85,7 @@ object Requester {
     fun init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null) {
         if (init)
             return
+        setCharset(charset)
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
         cacheDir = File(application.externalCacheDir, "requester")
         mainLooperHandler = Handler(Looper.getMainLooper())
@@ -139,6 +145,15 @@ object Requester {
 
     fun setCharset(charset: String) {
         this.charset = charset
+        try {
+            val httpHeaderParserClass = HttpHeaderParser::class.java
+            val defaultContentCharsetField = httpHeaderParserClass.getDeclaredField("DEFAULT_CONTENT_CHARSET")
+            defaultContentCharsetField.isAccessible = true
+            defaultContentCharsetField.set(null, charset)
+            defaultContentCharsetField.isAccessible = false
+        } catch (ignore: Throwable) {
+            ignore.printStackTrace()
+        }
     }
 
     fun showLog(showLog: Boolean) {
