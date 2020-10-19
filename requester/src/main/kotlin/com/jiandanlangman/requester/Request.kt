@@ -3,6 +3,7 @@ package com.jiandanlangman.requester
 import android.os.SystemClock
 import android.util.Log
 import com.android.volley.VolleyError
+import java.io.File
 import java.net.URL
 
 
@@ -16,6 +17,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
 
     private val headers = HashMap<String, String>()
     private val params = HashMap<String, String>()
+    private val files = ArrayList<MultipartStringRequest.FileParam>()
 
     private var gzipEnabled = parameterProvider.getGZIPEnabled()
     private var retryPolicy = parameterProvider.getRetryPolicy()
@@ -34,6 +36,13 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
             params[field] = value.toString()
         return this
     }
+
+    fun addFile(field: String, value: String): Request {
+        files.add(MultipartStringRequest.FileParam(field, value))
+        return this
+    }
+
+    fun addFile(field: String, value: File) = addFile(field, value.absolutePath)
 
     fun enableGZIP(enable: Boolean): Request {
         gzipEnabled = enable
@@ -92,16 +101,25 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                 startRequestTime = SystemClock.elapsedRealtime()
                 Log.d("StartRequest", "request: $fullUrl")
             }
-            val requestUrl = if (method == com.android.volley.Request.Method.GET)
+            val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty())
                 parameterProvider.getDNS()?.lookup(host)?.let { fullUrl.replaceFirst(host, it) } ?: fullUrl
             else
                 parameterProvider.getDNS()?.lookup(host)?.let { url.replaceFirst(host, it) } ?: url
-            val request = StringRequest(parameterProvider.getCharset(), method, gzipEnabled, requestUrl, headers, params, {
-                if (!handleResponse(fullUrl, it ?: "", type, false, listener) && !disableCache)
-                    parameterProvider.getCacheManager()?.put(url, params, headers, it)
-            }, {
-                handleError(fullUrl, it, type, listener)
-            }).setRetryPolicy(retryPolicy).setShouldCache(false).setTag(tag)
+            val request = if (files.isNotEmpty())
+                MultipartStringRequest(parameterProvider.getCharset(), gzipEnabled, requestUrl, headers, params, files, {
+                    if (!handleResponse(fullUrl, it ?: "", type, false, listener) && !disableCache)
+                        parameterProvider.getCacheManager()?.put(url, params, headers, it)
+                }, {
+                    handleError(fullUrl, it, type, listener)
+                })
+            else
+                StringRequest(parameterProvider.getCharset(), method, gzipEnabled, requestUrl, headers, params, {
+                    if (!handleResponse(fullUrl, it ?: "", type, false, listener) && !disableCache)
+                        parameterProvider.getCacheManager()?.put(url, params, headers, it)
+                }, {
+                    handleError(fullUrl, it, type, listener)
+                })
+            request.setRetryPolicy(retryPolicy).setShouldCache(false).setTag(tag)
             parameterProvider.getRequestQueue().add(request)
         }
     }

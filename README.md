@@ -18,6 +18,7 @@
 - 更加直观的日志，和开启日志的方法
 - 支持接口缓存
 - 支持自定义DNS解析
+- 支持文件上传
 - 其它更多特性
 
 该控件使用Kotlin编写，所以你的项目必须接入Kotlin才能正常使用
@@ -222,6 +223,22 @@ Request.addHeader(field: String, value: Any?): Request
 
 //添加参数
 Request.addParam(field: String, value: Any?): Request
+
+
+/**
+ *添加文件，当请求添加了文件后，将强制使用POST方式请求
+ * @param field 文件名称(form key)
+ * @param value 要添加的文件
+ */
+Request.addFile(field: String, value: File): Request
+
+
+/**
+ *添加文件，当请求添加了文件后，将强制使用POST方式请求
+ * @param field 文件名称(form key)
+ * @param value 要添加的文件的绝对路径
+ */
+Request.addFile(filed: String, value: String): Request
 
 
 //开关单个请求的GZIP压缩
