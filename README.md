@@ -181,7 +181,7 @@ Requester.setDataParser(dataParser: DataParser)
  * callback中的headers、params都已经带上了所有参数。你可以在这个回调中对参数进行修改操作，比如加入新的参数，根据参数计算签名等
  * 这个回调不是在主线程中执行的，但所有网络请求的这个回调一定是在同一个线程。如果要在这里更新UI，请注意切换到主线程
  */
-Requester.setOnPreRequestCallback(callback: ((url: String, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?)
+Requester.setOnPreRequestCallback(callback: ((url: String, method: Int, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?)
 
 
  /**

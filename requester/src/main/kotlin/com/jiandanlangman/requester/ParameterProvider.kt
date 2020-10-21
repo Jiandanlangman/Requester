@@ -21,7 +21,7 @@ internal interface ParameterProvider {
 
     fun getMainLooperHandler(): Handler
 
-    fun getPreRequestCallback(): ((url: String, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?
+    fun getPreRequestCallback(): ((url: String, method: Int, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?
 
     fun getOnResponseListener(): ((response: Response<out ParsedData>) -> Boolean)?
 

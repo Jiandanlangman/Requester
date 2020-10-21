@@ -90,7 +90,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
             headers["Host"] = host
             val globalParams = parameterProvider.getGlobalParams()
             globalParams.keys.filter { !params.containsKey(it) }.forEach { params[it] = globalParams[it].toString() }
-            parameterProvider.getPreRequestCallback()?.invoke(url, headers, params)
+            parameterProvider.getPreRequestCallback()?.invoke(url, if (files.isNotEmpty()) com.android.volley.Request.Method.POST else method, headers, params)
             val fullUrl = generateFullUrl()
             if (!disableCache)
                 parameterProvider.getCacheManager()?.get(url, headers, params)?.let {

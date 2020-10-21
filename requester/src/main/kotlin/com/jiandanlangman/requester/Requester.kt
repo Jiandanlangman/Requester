@@ -75,7 +75,7 @@ object Requester {
 
 
     private var dataParser: DataParser? = null
-    private var preRequestCallback: ((String, HashMap<String, String>, HashMap<String, String>) -> Unit)? = null
+    private var preRequestCallback: ((String, Int, HashMap<String, String>, HashMap<String, String>) -> Unit)? = null
     private var onResponseListener: ((Response<out ParsedData>) -> Boolean)? = null
     private var cacheManager: CacheManager? = null
     private var dns: DNS? = null
@@ -107,7 +107,7 @@ object Requester {
         onResponseListener = listener
     }
 
-    fun setOnPreRequestCallback(callback: ((url: String, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?) {
+    fun setOnPreRequestCallback(callback: ((url: String, method: Int, headers: HashMap<String, String>, params: HashMap<String, String>) -> Unit)?) {
         preRequestCallback = callback
     }
 
