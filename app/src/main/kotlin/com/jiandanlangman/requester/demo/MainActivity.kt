@@ -25,7 +25,7 @@ class MainActivity : BaseActivity() {
 //        Log.d("MainActivity", ip?.let { u.replaceFirst(url.host, it) } ?: u)
 
         Requester.setDNS(object :DNS {
-            override fun lookup(hostname: String) = "z.520hx.vip"
+            override fun getIP(hostname: String) = "z.520hx.vip"
 
         })
         get("http://z.520hx.vip/gift-log/create&gift_id=47&to_uid=11&number=1&created_in=room&created_in_id=11&room_id=11")

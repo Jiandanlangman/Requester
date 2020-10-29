@@ -102,9 +102,9 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                 Log.d("StartRequest", "request: $fullUrl")
             }
             val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty())
-                parameterProvider.getDNS()?.lookup(host)?.let { fullUrl.replaceFirst(host, it) } ?: fullUrl
+                parameterProvider.getDNS()?.getIP(host)?.let { fullUrl.replaceFirst(host, it) } ?: fullUrl
             else
-                parameterProvider.getDNS()?.lookup(host)?.let { url.replaceFirst(host, it) } ?: url
+                parameterProvider.getDNS()?.getIP(host)?.let { url.replaceFirst(host, it) } ?: url
             val request = if (files.isNotEmpty())
                 MultipartStringRequest(parameterProvider.getCharset(), gzipEnabled, requestUrl, headers, params, files, {
                     if (!handleResponse(fullUrl, it ?: "", type, false, listener) && !disableCache)
