@@ -103,7 +103,6 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
             }
             val iNetAddressList  = parameterProvider.getDNS()?.lookup(host)
             val ip = if(iNetAddressList.isNullOrEmpty()) null else iNetAddressList[0].hostAddress
-            Log.d("Requester", "host:$host, ip:$ip")
             val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty())
                 ip?.let { fullUrl.replaceFirst(host, it) } ?: fullUrl
             else

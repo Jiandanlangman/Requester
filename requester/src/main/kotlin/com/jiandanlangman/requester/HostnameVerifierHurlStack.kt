@@ -7,7 +7,7 @@ import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-class HostnameVerifierHurlStack(private val hostnameVerifier: HostnameVerifier, urlRewriter: UrlRewriter?, sSLSocketFactory: SSLSocketFactory?) : HurlStack(urlRewriter, sSLSocketFactory) {
+internal class HostnameVerifierHurlStack(private val hostnameVerifier: HostnameVerifier, urlRewriter: UrlRewriter?, sSLSocketFactory: SSLSocketFactory?) : HurlStack(urlRewriter, sSLSocketFactory) {
 
     override fun createConnection(url: URL?): HttpURLConnection {
         val httpURLConnection = super.createConnection(url)
