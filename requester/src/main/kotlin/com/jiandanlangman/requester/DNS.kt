@@ -1,7 +1,9 @@
 package com.jiandanlangman.requester
 
+import java.net.InetAddress
+
 interface DNS {
 
-    fun getIP(hostname:String) : String?
+    fun lookup(hostname: String) : List<InetAddress>
 
 }
