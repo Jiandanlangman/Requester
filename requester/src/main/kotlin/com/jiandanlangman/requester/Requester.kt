@@ -9,11 +9,9 @@ import com.android.volley.ExecutorDelivery
 import com.android.volley.toolbox.BasicNetwork
 import com.android.volley.toolbox.DiskBasedCache
 import com.android.volley.toolbox.HttpHeaderParser
-import com.android.volley.toolbox.HurlStack
 import java.io.File
 import java.io.InputStream
 import javax.net.ssl.HostnameVerifier
-import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
 
@@ -93,7 +91,6 @@ object Requester {
         mainLooperHandler = Handler(Looper.getMainLooper())
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
         hostnameVerifier = HostnameVerifier { _, _ -> true }
-        setSecureVerifier()
         this.maxRequestQueueCount = if (maxRequestQueueCount > 0) maxRequestQueueCount else 1
         val thread = HandlerThread("RequesterDeliveryThread", Process.THREAD_PRIORITY_BACKGROUND)
         thread.start()
@@ -189,13 +186,6 @@ object Requester {
 
     fun cancelAll(tag: Any) = requestQueues.forEach { it.cancelAll(tag) }
 
-    private fun setSecureVerifier() {
-        if (HttpsURLConnection.getDefaultHostnameVerifier() != hostnameVerifier)
-            HttpsURLConnection.setDefaultHostnameVerifier(hostnameVerifier)
-        if (HttpsURLConnection.getDefaultSSLSocketFactory() != sslSocketFactory)
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory)
-    }
-
     private fun getRequestQueue(): RequestQueue {
         var burdens = Int.MAX_VALUE
         var requestQueue = requestQueues[0]
@@ -210,7 +200,6 @@ object Requester {
                 requestQueue = it
             }
         }
-        setSecureVerifier()
         if (requestQueues.size < maxRequestQueueCount)
             return createRequestQueue()
         return requestQueue
@@ -218,7 +207,7 @@ object Requester {
 
     private fun createRequestQueue(): RequestQueue {
         val cache = DiskBasedCache(cacheDir)
-        val network = BasicNetwork(HurlStack(null, null))
+        val network = BasicNetwork(HostnameVerifierHurlStack(hostnameVerifier,null, sslSocketFactory))
         val requestQueue = RequestQueue(cache, network, 4, ExecutorDelivery(executorDeliveryHandler))
         requestQueue.setRequestAddListener { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) + 1 }
         requestQueue.addRequestFinishedListener<StringRequest> { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) - 1 }
