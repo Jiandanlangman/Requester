@@ -2,7 +2,6 @@ package com.jiandanlangman.requester
 
 import android.os.SystemClock
 import android.util.Log
-import com.android.volley.VolleyError
 import java.io.File
 import java.net.URL
 
@@ -22,7 +21,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
     private var gzipEnabled = parameterProvider.getGZIPEnabled()
     private var retryPolicy = parameterProvider.getRetryPolicy()
     private var disableCache = false
-    private var startRequestTime = 0L
+    private var requestTime = 0L
 
 
     fun addHeader(field: String, value: Any?): Request {
@@ -84,25 +83,30 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
 
     fun <T : ParsedData> start(type: Class<T>, listener: (response: Response<T>) -> Unit) {
         parameterProvider.getExecutorDeliveryHandler().post {
+            val fullUrl = generateFullUrl()
             val globalHeaders = parameterProvider.getGlobalHeaders()
             globalHeaders.keys.filter { !headers.containsKey(it) }.forEach { headers[it] = globalHeaders[it].toString() }
-            val host = URL(url).host
+            val host = try {
+                URL(url).host
+            } catch (tr: Throwable) {
+                handleError(fullUrl, tr, type, listener)
+                return@post
+            }
             headers["Host"] = host
             val globalParams = parameterProvider.getGlobalParams()
             globalParams.keys.filter { !params.containsKey(it) }.forEach { params[it] = globalParams[it].toString() }
             parameterProvider.getPreRequestCallback()?.invoke(url, if (files.isNotEmpty()) com.android.volley.Request.Method.POST else method, headers, params)
-            val fullUrl = generateFullUrl()
             if (!disableCache)
                 parameterProvider.getCacheManager()?.get(url, headers, params)?.let {
                     //TODO 在网络请求特别快的情况下，是否会出现网络比缓存先返回的情况？
                     handleResponse(fullUrl, it, type, true, listener)
                 }
             if (parameterProvider.isShowLog()) {
-                startRequestTime = SystemClock.elapsedRealtime()
+                requestTime = SystemClock.elapsedRealtime()
                 Log.d("StartRequest", "request: $fullUrl")
             }
-            val iNetAddressList  = parameterProvider.getDNS()?.lookup(host)
-            val ip = if(iNetAddressList.isNullOrEmpty()) null else iNetAddressList[0].hostAddress
+            val iNetAddressList = parameterProvider.getDNS()?.lookup(host)
+            val ip = if (iNetAddressList.isNullOrEmpty()) null else iNetAddressList[0].hostAddress
             val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty())
                 ip?.let { fullUrl.replaceFirst(host, it) } ?: fullUrl
             else
@@ -127,10 +131,11 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
     }
 
     private fun <T : ParsedData> handleResponse(requestUrl: String, response: String, type: Class<T>, isCache: Boolean, listener: (response: Response<T>) -> Unit): Boolean {
+        val responseTime = SystemClock.elapsedRealtime()
         var hasError = true
         if (response.isNotEmpty()) {
             if (parameterProvider.isShowLog() && !isCache)
-                Log.d("OnResponse", " \nrequest   :  $requestUrl\ntimeconsum:  ${SystemClock.elapsedRealtime() - startRequestTime}ms\nresponse  :  $response\n\n  ")
+                Log.d("OnResponse", " \nrequest   :  $requestUrl\ntimeconsum:  ${responseTime - requestTime}ms\nresponse  :  $response\n\n  ")
             var parseDataSuccess = true
             val parsedData = try {
                 parameterProvider.parseData(response, type)
@@ -138,34 +143,35 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                 parseDataSuccess = false
                 parameterProvider.parseData(EMPTY_JSON, type)
             }
-            var resp = Response(if (parseDataSuccess) ErrorCode.NO_ERROR else ErrorCode.PARSE_DATA_ERROR, isCache, response, parsedData)
+            var resp = Response(if (parseDataSuccess) ErrorCode.NO_ERROR else ErrorCode.PARSE_DATA_ERROR, isCache, response, parsedData, requestTime, responseTime, url, headers, params)
             if (parameterProvider.getOnResponseListener()?.invoke(resp) == false)
-                resp = Response(ErrorCode.CUSTOM_ERROR, isCache, response, parsedData)
+                resp = Response(ErrorCode.CUSTOM_ERROR, isCache, response, parsedData, requestTime, responseTime, url, headers, params)
             else {
                 hasError = false
                 if (parameterProvider.isShowLog() && isCache)
-                    Log.d("OnCache", " \nrequest   :  $requestUrl\ntimeconsum:  ${SystemClock.elapsedRealtime() - startRequestTime}ms\nresponse  :  $response\n\n  ")
+                    Log.d("OnCache", " \nrequest   :  $requestUrl\ntimeconsum:  ${responseTime - requestTime}ms\nresponse  :  $response\n\n  ")
             }
             parameterProvider.getMainLooperHandler().post { listener.invoke(resp) }
         } else {
             val parsedData = parameterProvider.parseData(EMPTY_JSON, type)
-            var resp = Response(ErrorCode.NO_RESPONSE_DATA, isCache, EMPTY_JSON, parsedData)
+            var resp = Response(ErrorCode.NO_RESPONSE_DATA, isCache, EMPTY_JSON, parsedData, requestTime, responseTime, url, headers, params)
             if (parameterProvider.getOnResponseListener()?.invoke(resp) == false)
-                resp = Response(ErrorCode.CUSTOM_ERROR, isCache, EMPTY_JSON, parsedData)
+                resp = Response(ErrorCode.CUSTOM_ERROR, isCache, EMPTY_JSON, parsedData, requestTime, responseTime, url, headers, params)
             parameterProvider.getMainLooperHandler().post { listener.invoke(resp) }
         }
         return hasError
     }
 
-    private fun <T : ParsedData> handleError(requestUrl: String, error: VolleyError, type: Class<T>, listener: (response: Response<T>) -> Unit) {
+    private fun <T : ParsedData> handleError(requestUrl: String, error: Throwable, type: Class<T>, listener: (response: Response<T>) -> Unit) {
+        val responseTime = SystemClock.elapsedRealtime()
         if (parameterProvider.isShowLog()) {
             Log.d("OnRequestError", " \n request: $requestUrl")
             error.printStackTrace()
         }
         val parsedData = parameterProvider.parseData(EMPTY_JSON, type)
-        var resp = Response(ErrorCode.REQUEST_FAILED, false, EMPTY_JSON, parsedData)
+        var resp = Response(ErrorCode.REQUEST_FAILED, false, EMPTY_JSON, parsedData, requestTime, responseTime, url, headers, params, error)
         if (parameterProvider.getOnResponseListener()?.invoke(resp) == false)
-            resp = Response(ErrorCode.CUSTOM_ERROR, false, EMPTY_JSON, parsedData)
+            resp = Response(ErrorCode.CUSTOM_ERROR, false, EMPTY_JSON, parsedData, requestTime, responseTime, url, headers, params, error)
         parameterProvider.getMainLooperHandler().post { listener.invoke(resp) }
     }
 
