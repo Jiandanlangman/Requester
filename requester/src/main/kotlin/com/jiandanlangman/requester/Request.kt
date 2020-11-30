@@ -101,10 +101,9 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                     //TODO 在网络请求特别快的情况下，是否会出现网络比缓存先返回的情况？
                     handleResponse(fullUrl, it, type, true, listener)
                 }
-            if (parameterProvider.isShowLog()) {
-                requestTime = SystemClock.elapsedRealtime()
+            requestTime = SystemClock.elapsedRealtime()
+            if (parameterProvider.isShowLog())
                 Log.d("StartRequest", "request: $fullUrl")
-            }
             val iNetAddressList = parameterProvider.getDNS()?.lookup(host)
             val ip = if (iNetAddressList.isNullOrEmpty()) null else iNetAddressList[0].hostAddress
             val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty())
