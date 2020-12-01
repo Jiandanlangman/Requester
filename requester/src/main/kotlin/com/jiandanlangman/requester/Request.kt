@@ -1,6 +1,5 @@
 package com.jiandanlangman.requester
 
-import android.os.SystemClock
 import android.util.Log
 import java.io.File
 import java.net.URL
@@ -101,7 +100,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                     //TODO 在网络请求特别快的情况下，是否会出现网络比缓存先返回的情况？
                     handleResponse(fullUrl, it, type, true, listener)
                 }
-            requestTime = SystemClock.elapsedRealtime()
+            requestTime = System.currentTimeMillis()
             if (parameterProvider.isShowLog())
                 Log.d("StartRequest", "request: $fullUrl")
             val iNetAddressList = parameterProvider.getDNS()?.lookup(host)
@@ -130,7 +129,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
     }
 
     private fun <T : ParsedData> handleResponse(requestUrl: String, response: String, type: Class<T>, isCache: Boolean, listener: (response: Response<T>) -> Unit): Boolean {
-        val responseTime = SystemClock.elapsedRealtime()
+        val responseTime = System.currentTimeMillis()
         var hasError = true
         if (response.isNotEmpty()) {
             if (parameterProvider.isShowLog() && !isCache)
@@ -162,7 +161,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
     }
 
     private fun <T : ParsedData> handleError(requestUrl: String, error: Throwable, type: Class<T>, listener: (response: Response<T>) -> Unit) {
-        val responseTime = SystemClock.elapsedRealtime()
+        val responseTime = System.currentTimeMillis()
         if (parameterProvider.isShowLog()) {
             Log.d("OnRequestError", " \n request: $requestUrl")
             error.printStackTrace()
