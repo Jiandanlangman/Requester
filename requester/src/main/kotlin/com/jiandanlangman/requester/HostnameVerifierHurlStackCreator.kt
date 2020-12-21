@@ -9,13 +9,13 @@ import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocketFactory
 
-object HostnameVerifierHurlStackCreator : HttpStackCreator {
+internal object HostnameVerifierHurlStackCreator : HttpStackCreator {
 
     private val hostnameVerifier = HostnameVerifier { _, _ -> true }
 
     override fun create(sslSocketFactory: SSLSocketFactory, dns: DNS?) = HostnameVerifierHurlStack(hostnameVerifier, null, sslSocketFactory, dns)
 
-    class HostnameVerifierHurlStack(private val hostnameVerifier: HostnameVerifier, urlRewriter: UrlRewriter?, sSLSocketFactory: SSLSocketFactory?, private val dns: DNS?) : HurlStack(urlRewriter, sSLSocketFactory) {
+    internal class HostnameVerifierHurlStack(private val hostnameVerifier: HostnameVerifier, urlRewriter: UrlRewriter?, sSLSocketFactory: SSLSocketFactory?, private val dns: DNS?) : HurlStack(urlRewriter, sSLSocketFactory) {
 
         override fun executeRequest(request: Request<*>, additionalHeaders: MutableMap<String, String>): HttpResponse {
             request.headers["Host"] = URL(request.url).host
