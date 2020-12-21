@@ -4,6 +4,7 @@ import android.os.Bundle
 import com.jiandanlangman.requester.DNS
 import com.jiandanlangman.requester.Requester
 import com.jiandanlangman.requester.get
+import com.jiandanlangman.requester.post
 import java.net.InetAddress
 
 class MainActivity : BaseActivity() {
@@ -31,8 +32,9 @@ class MainActivity : BaseActivity() {
 //            }
 //
 //        })
-        get("http://z.520hx.vip/gift-log/create&gift_id=47&to_uid=11&number=1&created_in=room&created_in_id=11&room_id=11")
-            .start()
+//        get("http://z.520hx.vip/gift-log/create&gift_id=47&to_uid=11&number=1&created_in=room&created_in_id=11&room_id=11")
+//            .start()
+        post("https://z.huakui.qq.com/system/skin").start()
     }
 
 

@@ -78,12 +78,13 @@ object Requester {
 
 
     @Synchronized
-    fun init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, certInputStream: InputStream? = null) {
+    fun init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, dns: DNS?, certInputStream: InputStream? = null) {
         if (init)
             return
         setCharset(charset)
         cacheDir = File(application.externalCacheDir, "requester")
         this.httpStackCreator = httpStackCreator ?: HostnameVerifierHurlStackCreator
+        this.dns = dns
         mainLooperHandler = Handler(Looper.getMainLooper())
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
         this.maxRequestQueueCount = if (maxRequestQueueCount > 0) maxRequestQueueCount else 1
@@ -169,9 +170,6 @@ object Requester {
         this.cacheManager = cacheManager
     }
 
-    fun setDNS(dns: DNS?) {
-        this.dns = dns
-    }
 
     fun get(url: String, tag: Any) = request(com.android.volley.Request.Method.GET, url, tag)
 
