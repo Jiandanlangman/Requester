@@ -78,7 +78,7 @@ object Requester {
 
 
     @Synchronized
-    fun init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, dns: DNS?, certInputStream: InputStream? = null) {
+    fun init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, dns: DNS? = null, certInputStream: InputStream? = null) {
         if (init)
             return
         setCharset(charset)
