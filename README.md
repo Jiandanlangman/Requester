@@ -97,9 +97,11 @@ Requester.get("user/list", "tag")
  * 虽然请求队列的数量是根据实际使用量自动增加或减少的，但maxRequestQueueCount控制着最大请求队列数和初始请求队列数。请根据实际情况设置，避免资源浪费
  * @param application 应用程序上下文
  * @param maxRequestQueueCount 最多能有多少个请求队列，1个请求队列的最大并发为4，2个请求队列的最大并发则为2*4=8
+ * @param httpStackCreator HttpStack创建器，用于定义网络请求核心实现，不传和传null表示使用默认HttpURLConnection实现
+ * @param dns 自定义DNS解析，不传和传null表示使用系统默认的DNS解析服务
  * @param certInputStream 自定义证书文件的输入流，不传和传null表示信任所有证书
  */
-Requester.init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null)
+Requester.init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, dns: DNS? = null, certInputStream: InputStream? = null)
 
 
 /**
@@ -208,13 +210,6 @@ Requester.cancelAll(tag: Any)
  * @param cacheManager 缓存管理器，用于自定义缓存策略，传入null表示禁用接口缓存功能，默认null
  */
 Requester.setCacheManager(cacheManager: CacheManager?)
-
-
-/**
- * 启用自定义DNS解析
- * @param dns 自定义DNS解析器。里面只有一个方法:lookup，传入host。返回host对应的IP。传入null表示禁用自定义DNS解析。默认null
- */
-Requester.setDNS(dns: DNS?)
 
 
 //添加请求头

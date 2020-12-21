@@ -81,12 +81,12 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
 
     fun <T : ParsedData> start(type: Class<T>, listener: (response: Response<T>) -> Unit) {
         parameterProvider.getExecutorDeliveryHandler().post {
-            val fullUrl = generateFullUrl()
             val globalHeaders = parameterProvider.getGlobalHeaders()
             globalHeaders.keys.filter { !headers.containsKey(it) }.forEach { headers[it] = globalHeaders[it].toString() }
             val globalParams = parameterProvider.getGlobalParams()
             globalParams.keys.filter { !params.containsKey(it) }.forEach { params[it] = globalParams[it].toString() }
             parameterProvider.getPreRequestCallback()?.invoke(url, if (files.isNotEmpty()) com.android.volley.Request.Method.POST else method, headers, params)
+            val fullUrl = generateFullUrl()
             if (!disableCache)
                 parameterProvider.getCacheManager()?.get(url, headers, params)?.let {
                     //TODO 在网络请求特别快的情况下，是否会出现网络比缓存先返回的情况？
