@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdkVersion rootProject.minSdkVersion
         targetSdkVersion rootProject.compileSdkVersion
-        versionCode 1017
-        versionName "1.1.7"
+        versionCode 1018
+        versionName "1.1.8"
         consumerProguardFiles 'consumer-rules.pro'
     }
 
