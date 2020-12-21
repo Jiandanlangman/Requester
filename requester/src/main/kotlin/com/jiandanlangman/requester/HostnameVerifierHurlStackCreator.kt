@@ -18,7 +18,7 @@ internal object HostnameVerifierHurlStackCreator : HttpStackCreator {
     internal class HostnameVerifierHurlStack(private val hostnameVerifier: HostnameVerifier, urlRewriter: UrlRewriter?, sSLSocketFactory: SSLSocketFactory?, private val dns: DNS?) : HurlStack(urlRewriter, sSLSocketFactory) {
 
         override fun executeRequest(request: Request<*>, additionalHeaders: MutableMap<String, String>): HttpResponse {
-            request.headers["Host"] = URL(request.url).host
+            additionalHeaders["Host"] = URL(request.url).host
             return super.executeRequest(request, additionalHeaders)
         }
 
