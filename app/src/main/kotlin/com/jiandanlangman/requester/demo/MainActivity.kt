@@ -4,6 +4,7 @@ import android.os.Bundle
 import com.jiandanlangman.requester.DNS
 import com.jiandanlangman.requester.Requester
 import com.jiandanlangman.requester.get
+import java.net.InetAddress
 
 class MainActivity : BaseActivity() {
 
@@ -24,10 +25,12 @@ class MainActivity : BaseActivity() {
 //
 //        Log.d("MainActivity", ip?.let { u.replaceFirst(url.host, it) } ?: u)
 
-        Requester.setDNS(object :DNS {
-            override fun getIP(hostname: String) = "z.520hx.vip"
-
-        })
+//        Requester.setDNS(object :DNS {
+//            override fun lookup(hostname: String): List<InetAddress> {
+//                TODO("Not yet implemented")
+//            }
+//
+//        })
         get("http://z.520hx.vip/gift-log/create&gift_id=47&to_uid=11&number=1&created_in=room&created_in_id=11&room_id=11")
             .start()
     }

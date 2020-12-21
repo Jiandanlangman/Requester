@@ -31,6 +31,4 @@ internal interface ParameterProvider {
 
     fun getCacheManager(): CacheManager?
 
-    fun getDNS(): DNS?
-
 }

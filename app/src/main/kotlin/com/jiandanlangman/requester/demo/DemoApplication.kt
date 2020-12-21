@@ -86,7 +86,7 @@ class DemoApplication : Application() {
         Requester.enableGZIP(true)
 
         //当请求即将发送时，会自动回调这个方法，这个方法中的header, params都已经带上了所有参数。你可以在这个回调中对参数进行修改操作，比如加入新的参数，校验签名等
-        Requester.setOnPreRequestCallback { url, headers, params ->
+        Requester.setOnPreRequestCallback { url, method, headers, params ->
             params["t"] = System.currentTimeMillis().toString()
             val sign = (params["t"] + params["uid"] + params["token"]).hashCode().toString()
             params["sign"] = sign

@@ -2,7 +2,6 @@ package com.jiandanlangman.requester
 
 import android.util.Log
 import java.io.File
-import java.net.URL
 
 
 class Request internal constructor(private val parameterProvider: ParameterProvider, private val tag: Any, private val url: String, private val method: Int) {
@@ -85,13 +84,6 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
             val fullUrl = generateFullUrl()
             val globalHeaders = parameterProvider.getGlobalHeaders()
             globalHeaders.keys.filter { !headers.containsKey(it) }.forEach { headers[it] = globalHeaders[it].toString() }
-            val host = try {
-                URL(url).host
-            } catch (tr: Throwable) {
-                handleError(fullUrl, tr, type, listener)
-                return@post
-            }
-            headers["Host"] = host
             val globalParams = parameterProvider.getGlobalParams()
             globalParams.keys.filter { !params.containsKey(it) }.forEach { params[it] = globalParams[it].toString() }
             parameterProvider.getPreRequestCallback()?.invoke(url, if (files.isNotEmpty()) com.android.volley.Request.Method.POST else method, headers, params)
@@ -103,12 +95,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
             requestTime = System.currentTimeMillis()
             if (parameterProvider.isShowLog())
                 Log.d("StartRequest", "request: $fullUrl")
-            val iNetAddressList = parameterProvider.getDNS()?.lookup(host)
-            val ip = if (iNetAddressList.isNullOrEmpty()) null else iNetAddressList[0].hostAddress
-            val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty())
-                ip?.let { fullUrl.replaceFirst(host, it) } ?: fullUrl
-            else
-                ip?.let { url.replaceFirst(host, it) } ?: url
+            val requestUrl = if (method == com.android.volley.Request.Method.GET && files.isEmpty()) fullUrl else url
             val request = if (files.isNotEmpty())
                 MultipartStringRequest(parameterProvider.getCharset(), gzipEnabled, requestUrl, headers, params, files, {
                     if (!handleResponse(fullUrl, it ?: "", type, false, listener) && !disableCache)
@@ -123,7 +110,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                 }, {
                     handleError(fullUrl, it, type, listener)
                 })
-            request.setRetryPolicy(retryPolicy).setShouldCache(false).setTag(tag)
+            request.setRetryPolicy(retryPolicy).setShouldCache(false).tag = tag
             parameterProvider.getRequestQueue().add(request)
         }
     }

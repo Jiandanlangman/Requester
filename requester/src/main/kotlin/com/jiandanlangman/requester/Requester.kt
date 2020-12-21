@@ -6,12 +6,9 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.os.Process
 import com.android.volley.ExecutorDelivery
-import com.android.volley.toolbox.BasicNetwork
-import com.android.volley.toolbox.DiskBasedCache
-import com.android.volley.toolbox.HttpHeaderParser
+import com.android.volley.toolbox.*
 import java.io.File
 import java.io.InputStream
-import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLSocketFactory
 
 
@@ -56,8 +53,6 @@ object Requester {
 
         override fun getCacheManager() = cacheManager
 
-        override fun getDNS() = dns
-
     }
 
     private var charset = "UTF-8"
@@ -72,7 +67,7 @@ object Requester {
     private lateinit var mainLooperHandler: Handler
     private lateinit var executorDeliveryHandler: Handler
     private lateinit var sslSocketFactory: SSLSocketFactory
-    private lateinit var hostnameVerifier: HostnameVerifier
+    private lateinit var httpStackCreator: HttpStackCreator
 
 
     private var dataParser: DataParser? = null
@@ -83,14 +78,14 @@ object Requester {
 
 
     @Synchronized
-    fun init(application: Application, maxRequestQueueCount: Int, certInputStream: InputStream? = null) {
+    fun init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, certInputStream: InputStream? = null) {
         if (init)
             return
         setCharset(charset)
         cacheDir = File(application.externalCacheDir, "requester")
+        this.httpStackCreator = httpStackCreator ?: HostnameVerifierHurlStackCreator
         mainLooperHandler = Handler(Looper.getMainLooper())
         sslSocketFactory = HTTPSManager.buildSSLSocketFactory(certInputStream)
-        hostnameVerifier = HostnameVerifier { _, _ -> true }
         this.maxRequestQueueCount = if (maxRequestQueueCount > 0) maxRequestQueueCount else 1
         val thread = HandlerThread("RequesterDeliveryThread", Process.THREAD_PRIORITY_BACKGROUND)
         thread.start()
@@ -207,7 +202,7 @@ object Requester {
 
     private fun createRequestQueue(): RequestQueue {
         val cache = DiskBasedCache(cacheDir)
-        val network = BasicNetwork(HostnameVerifierHurlStack(hostnameVerifier,null, sslSocketFactory))
+        val network = BasicNetwork(httpStackCreator.create(sslSocketFactory, dns))
         val requestQueue = RequestQueue(cache, network, 4, ExecutorDelivery(executorDeliveryHandler))
         requestQueue.setRequestAddListener { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) + 1 }
         requestQueue.addRequestFinishedListener<StringRequest> { requestQueueBurdens[requestQueue] = (requestQueueBurdens[requestQueue] ?: 0) - 1 }
