@@ -1,10 +1,8 @@
 package com.jiandanlangman.requester
 
+import android.app.Activity
 import android.app.Application
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Looper
-import android.os.Process
+import android.os.*
 import com.android.volley.ExecutorDelivery
 import com.android.volley.toolbox.*
 import java.io.File
@@ -78,9 +76,26 @@ object Requester {
 
 
     @Synchronized
-    fun init(application: Application, maxRequestQueueCount: Int, httpStackCreator:HttpStackCreator?= null, dns: DNS? = null, certInputStream: InputStream? = null) {
+    fun init(application: Application, maxRequestQueueCount: Int = 1, httpStackCreator: HttpStackCreator? = null, dns: DNS? = null, certInputStream: InputStream? = null) {
         if (init)
             return
+        application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+
+            override fun onActivityStarted(activity: Activity) = Unit
+
+            override fun onActivityResumed(activity: Activity) = Unit
+
+            override fun onActivityPaused(activity: Activity) = Unit
+
+            override fun onActivityStopped(activity: Activity) = Unit
+
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+
+            override fun onActivityDestroyed(activity: Activity) = cancelAll(activity)
+
+        })
         setCharset(charset)
         cacheDir = File(application.externalCacheDir, "requester")
         this.httpStackCreator = httpStackCreator ?: HostnameVerifierHurlStackCreator
@@ -222,5 +237,5 @@ object Requester {
             }
         }
     }
-
 }
+
