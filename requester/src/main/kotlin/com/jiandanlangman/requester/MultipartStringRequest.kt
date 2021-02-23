@@ -6,7 +6,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.util.*
 
-internal class MultipartStringRequest(private val charset: String, enableGZIP: Boolean, url: String, headers: Map<String, String>, params: Map<String, String>, private val files: List<FileParam>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : StringRequest(charset, 1, enableGZIP, url, headers, params, listener, errorListener) {
+internal class MultipartStringRequest(private val charset: String, enableGZIP: Boolean, url: String, headers: Map<String, String>, params: Map<String, String>, private val files: List<FileParam>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : StringRequest(charset, 1, enableGZIP, url, headers, params, null, listener, errorListener) {
 
     companion object {
         private const val PREFIX = "--"
