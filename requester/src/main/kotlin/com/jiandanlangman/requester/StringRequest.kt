@@ -10,7 +10,7 @@ import java.lang.ref.SoftReference
 import java.nio.charset.Charset
 import java.util.zip.GZIPInputStream
 
- internal open class StringRequest(private val charset: String, method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
+internal open class StringRequest(private val charset: String, method: Int, enableGZIP: Boolean, url: String, headers: Map<String, String>, private val params: Map<String, String>, private val body: ByteArray?, listener: Response.Listener<String>?, errorListener: Response.ErrorListener) : com.android.volley.toolbox.StringRequest(method, url, listener, errorListener) {
 
     private companion object {
         val bufferPool = Pools.SynchronizedPool<SoftReference<ByteArray>>(8)
@@ -28,6 +28,8 @@ import java.util.zip.GZIPInputStream
     override fun getParams() = params
 
     override fun getHeaders() = headers
+
+    override fun getBody(): ByteArray = body ?: super.getBody()
 
     override fun parseNetworkResponse(response: NetworkResponse): Response<String> {
         if ("gzip".equals(response.headers["Content-Encoding"], true))

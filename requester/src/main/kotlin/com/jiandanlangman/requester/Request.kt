@@ -21,6 +21,8 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
     private var disableCache = false
     private var requestTime = 0L
 
+    private var body: ByteArray? = null
+
 
     fun addHeader(field: String, value: Any?): Request {
         if (value != null)
@@ -31,6 +33,11 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
     fun addParam(field: String, value: Any?): Request {
         if (value != null)
             params[field] = value.toString()
+        return this
+    }
+
+    fun setBody(body: ByteArray?): Request {
+        this.body = body
         return this
     }
 
@@ -104,7 +111,7 @@ class Request internal constructor(private val parameterProvider: ParameterProvi
                     handleError(fullUrl, it, type, listener)
                 })
             else
-                StringRequest(parameterProvider.getCharset(), method, gzipEnabled, requestUrl, headers, params, {
+                StringRequest(parameterProvider.getCharset(), method, gzipEnabled, requestUrl, headers, params, body, {
                     if (!handleResponse(fullUrl, it ?: "", type, false, listener) && !disableCache)
                         parameterProvider.getCacheManager()?.put(url, params, headers, it)
                 }, {
